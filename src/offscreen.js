@@ -249,6 +249,12 @@ function resizeImage(image, screenshot = false) {
         const targetRatio = targetWidth / targetHeight;
         const tolerance = 0.25;
 
+        // Skip resizing for GIFs to preserve animation
+        if (image.startsWith('data:image/gif')) {
+            resolve(image);
+            return;
+        }
+
         // Special handling for SVG data URLs
         if (image.startsWith('data:image/svg+xml')) {
             const img = new Image();

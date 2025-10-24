@@ -60,6 +60,7 @@ const fetchImageButton = document.getElementById("fetchImageButton");
 const modalBgColorPickerInput = document.getElementById("modalBgColorPickerInput");
 const modalBgColorPickerBtn = document.getElementById("modalBgColorPickerBtn");
 const modalBgColorPreview = document.getElementById("modalBgColorPreview");
+const modalTransparentBgCheckbox = document.getElementById("modalTransparentBgCheckbox");
 const noBookmarks = document.getElementById('noBookmarks');
 
 // settings sidebar
@@ -704,6 +705,12 @@ async function printBookmarks(bookmarks, parentId) {
                 //content.style.backgroundColor = thumbBg ? '' : 'rgba(255, 255, 255, 0.5)';
                 content.style.backgroundColor =  'rgba(255, 255, 255, 0.5)';
 
+                // Create img element for thumbnail (supports GIF animation)
+                let img = document.createElement('img');
+                img.classList.add('tile-img');
+                img.alt = bookmark.title;
+                content.appendChild(img);
+
                 let title = document.createElement('div');
                 title.classList.add('tile-title');
                 if (!settings.showTitles) {
@@ -1087,6 +1094,12 @@ async function buildModal(url, title) {
         modalImgContainer.removeChild(customCarousel);
     }
 
+    // Reset transparent background checkbox to unchecked and enable color picker
+    modalTransparentBgCheckbox.checked = false;
+    modalBgColorPickerInput.disabled = false;
+    modalBgColorPickerBtn.style.opacity = '1';
+    modalBgColorPickerBtn.style.pointerEvents = 'auto';
+
     let newCarousel = document.createElement('div');
     newCarousel.setAttribute('id', 'carousel');
     modalImgContainer.appendChild(newCarousel);
@@ -1112,7 +1125,19 @@ async function buildModal(url, title) {
             // todo: stop storing bg in gradient format jesus
             let bgColor = cssGradientToHex(images.bgColor);
             if (bgColor) {
-                setInputValue(modalBgColorPickerInput, rgbToHex(bgColor))
+                // Check if background is transparent (alpha = 0)
+                if (bgColor[3] === 0) {
+                    modalTransparentBgCheckbox.checked = true;
+                    modalBgColorPickerInput.disabled = true;
+                    modalBgColorPickerBtn.style.opacity = '0.5';
+                    modalBgColorPickerBtn.style.pointerEvents = 'none';
+                } else {
+                    modalTransparentBgCheckbox.checked = false;
+                    modalBgColorPickerInput.disabled = false;
+                    modalBgColorPickerBtn.style.opacity = '1';
+                    modalBgColorPickerBtn.style.pointerEvents = 'auto';
+                    setInputValue(modalBgColorPickerInput, rgbToHex(bgColor));
+                }
             }
         }
 
@@ -1411,15 +1436,38 @@ function saveBookmarkSettings() {
     let customCarousel = document.getElementById('customCarousel');
     if (customCarousel) {
         selectedImageSrc = customCarousel.children[0].src;
-        bgColor = getBgColor(customCarousel.children[0]);
-        if (colorPickerColor && colorPickerColor !== rgbToHex(bgColor)) {
-            //console.log("colors dont match, using the picker!")
-            bgColor = hexToCssGradient(colorPickerColor);
+        
+        // Check if transparent background is selected
+        if (modalTransparentBgCheckbox.checked) {
+            bgColor = 'linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0) 50%)';
         } else {
-            bgColor = rgbaToCssGradient(bgColor);
+            bgColor = getBgColor(customCarousel.children[0]);
+            if (colorPickerColor && colorPickerColor !== rgbToHex(bgColor)) {
+                //console.log("colors dont match, using the picker!")
+                bgColor = hexToCssGradient(colorPickerColor);
+            } else {
+                bgColor = rgbaToCssGradient(bgColor);
+            }
         }
-        targetNode.children[0].children[0].style.backgroundImage = `url('${selectedImageSrc}'), ${bgColor}`;
-        //targetNode.children[0].children[0].style.backgroundColor = bgColor;
+        // Update tile with img element instead of background-image
+        let tileContent = targetNode.children[0].children[0];
+        let img = tileContent.querySelector('.tile-img');
+        if (img) {
+            img.src = selectedImageSrc;
+            img.style.display = 'block'; // Ensure image is visible
+        }
+        // Extract and apply background color
+        if (bgColor && bgColor.includes('linear-gradient')) {
+            const match = bgColor.match(/rgba?\([^)]+\)/);
+            if (match) {
+                tileContent.style.backgroundColor = match[0];
+            } else {
+                tileContent.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+            }
+        } else {
+            tileContent.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+        }
+        
         chrome.storage.local.get(url)
             .then(result => {
                 let thumbnails = [];
@@ -1451,15 +1499,35 @@ function saveBookmarkSettings() {
                     bgColor = getBgColor(node.children[0]);
                 }
 
-                if (colorPickerColor && colorPickerColor !== rgbToHex(bgColor)) {
-                    bgColor = hexToCssGradient(colorPickerColor);
+                // Check if transparent background is selected
+                if (modalTransparentBgCheckbox.checked) {
+                    bgColor = 'linear-gradient(to bottom, rgba(0,0,0,0) 50%, rgba(0,0,0,0) 50%)';
                 } else {
-                    bgColor = rgbaToCssGradient(bgColor);
+                    if (colorPickerColor && colorPickerColor !== rgbToHex(bgColor)) {
+                        bgColor = hexToCssGradient(colorPickerColor);
+                    } else {
+                        bgColor = rgbaToCssGradient(bgColor);
+                    }
                 }
 
-                // update tile
-                targetNode.children[0].children[0].style.backgroundImage = `url('${selectedImageSrc}'), ${bgColor}`;
-                //targetNode.children[0].children[0].style.backgroundColor = bgColor;
+                // Update tile with img element instead of background-image
+                let tileContent = targetNode.children[0].children[0];
+                let img = tileContent.querySelector('.tile-img');
+                if (img) {
+                    img.src = selectedImageSrc;
+                    img.style.display = 'block'; // Ensure image is visible
+                }
+                // Extract and apply background color
+                if (bgColor && bgColor.includes('linear-gradient')) {
+                    const match = bgColor.match(/rgba?\([^)]+\)/);
+                    if (match) {
+                        tileContent.style.backgroundColor = match[0];
+                    } else {
+                        tileContent.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                    }
+                } else {
+                    tileContent.style.backgroundColor = 'rgba(255, 255, 255, 0.5)';
+                }
                 break;
             }
         }
@@ -1653,6 +1721,12 @@ function resizeBackground(dataURI) {
 // todo: completely offload this shit to the worker
 function resizeThumb(dataURI) {
     return new Promise(function (resolve, reject) {
+        // Skip resizing for GIFs to preserve animation
+        if (dataURI.startsWith('data:image/gif')) {
+            resolve(dataURI);
+            return;
+        }
+        
         let img = new Image();
         img.onload = async function () {
             if (this.height > 256 && this.width > 256) {
@@ -2001,11 +2075,14 @@ document.addEventListener("contextmenu", function (e) {
         return;
     }
     hideSettings();
-    if (e.target.className === 'tile-content') {
-        targetNode = e.target.parentElement.parentElement;
-        targetTileHref = e.target.parentElement.parentElement.href;
-        targetTileId = e.target.id;
-        targetTileTitle = e.target.nextElementSibling.innerText;
+    // Check if clicked on tile-content or tile-img (image inside tile-content)
+    if (e.target.className === 'tile-content' || e.target.classList.contains('tile-img')) {
+        // If clicked on img, get the parent tile-content
+        let tileContent = e.target.classList.contains('tile-img') ? e.target.parentElement : e.target;
+        targetNode = tileContent.parentElement.parentElement;
+        targetTileHref = tileContent.parentElement.parentElement.href;
+        targetTileId = tileContent.id;
+        targetTileTitle = tileContent.nextElementSibling.innerText;
         showContextMenu(menu, e.pageY, e.pageX);
         return false;
     } else if (e.target.classList.contains('folderTitle') && e.target.id !== "homeFolderLink") {
@@ -2025,7 +2102,11 @@ window.addEventListener("click", e => {
     if (typeof e.target.className === 'string' && e.target.className.indexOf('settingsCtl') >= 0) {
         return;
     }
-    if (e.target.className === 'tile-content' || e.target.className === 'tile-title') {
+    // Allow label clicks for form controls (like checkbox labels)
+    if (e.target.tagName === 'LABEL' && e.target.htmlFor) {
+        return;
+    }
+    if (e.target.className === 'tile-content' || e.target.className === 'tile-title' || e.target.classList.contains('tile-img')) {
         return;
     }
     e.preventDefault();
@@ -2212,6 +2293,21 @@ modalImgInput.onchange = function () {
             addImage(resizedImage);
         })
     });
+};
+
+// Handle transparent background checkbox
+modalTransparentBgCheckbox.onchange = function () {
+    if (this.checked) {
+        // Disable color picker when transparent is checked
+        modalBgColorPickerInput.disabled = true;
+        modalBgColorPickerBtn.style.opacity = '0.5';
+        modalBgColorPickerBtn.style.pointerEvents = 'none';
+    } else {
+        // Enable color picker when transparent is unchecked
+        modalBgColorPickerInput.disabled = false;
+        modalBgColorPickerBtn.style.opacity = '1';
+        modalBgColorPickerBtn.style.pointerEvents = 'auto';
+    }
 };
 
 
@@ -3067,8 +3163,32 @@ function setBackgroundImages(thumbnails) {
 function batchApplyImages(elements) {
     requestAnimationFrame(() => {
         elements.forEach(({ element, thumb }) => {
-            element.style.backgroundColor = "unset";
-            element.style.backgroundImage = `url('${thumb.thumbnail}'), ${thumb.bgColor}`;
+            // Parse the background color from the gradient format
+            let bgColor = thumb.bgColor;
+            if (bgColor && bgColor.includes('linear-gradient')) {
+                // Extract the first rgba color from the gradient
+                const match = bgColor.match(/rgba?\([^)]+\)/);
+                if (match) {
+                    element.style.backgroundColor = match[0];
+                } else {
+                    element.style.backgroundColor = "unset";
+                }
+            } else {
+                element.style.backgroundColor = bgColor || "unset";
+            }
+            
+            // Find or create img element
+            let img = element.querySelector('.tile-img');
+            if (!img) {
+                img = document.createElement('img');
+                img.classList.add('tile-img');
+                img.alt = '';
+                element.appendChild(img);
+            }
+            // Set the thumbnail source (supports GIF animation)
+            if (thumb.thumbnail) {
+                img.src = thumb.thumbnail;
+            }
         });
     });
 }
