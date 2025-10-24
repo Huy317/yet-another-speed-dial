@@ -163,6 +163,9 @@
   "title": {
     "message": "Speed Dial"
   },
+  "transparentBackground": {
+    "message": "Transparent Background"
+  },
   "uploadImage": {
     "message": "Add Image ..."
   },

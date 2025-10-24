@@ -59,6 +59,7 @@ const fetchImageButton = document.getElementById("fetchImageButton");
 const modalBgColorPickerInput = document.getElementById("modalBgColorPickerInput");
 const modalBgColorPickerBtn = document.getElementById("modalBgColorPickerBtn");
 const modalBgColorPreview = document.getElementById("modalBgColorPreview");
+const modalBgTransparent = document.getElementById("modalBgTransparent");
 const noBookmarks = document.getElementById('noBookmarks');
 
 // settings sidebar
@@ -1066,6 +1067,10 @@ function buildCreateDialModal(parentId) {
 }
 
 async function buildModal(url, title) {
+    // Reset checkbox and preview to default state
+    modalBgTransparent.checked = false;
+    modalBgColorPreview.style.opacity = '1';
+    
     // nuke any previous modal
     let carousel = document.getElementById("carousel");
     if (carousel) {
@@ -1103,6 +1108,10 @@ async function buildModal(url, title) {
             let bgColor = cssGradientToHex(images.bgColor);
             if (bgColor) {
                 setInputValue(modalBgColorPickerInput, rgbToHex(bgColor))
+                // Set transparent checkbox based on alpha value
+                modalBgTransparent.checked = bgColor[3] === 0;
+                // Update preview opacity to match checkbox state
+                modalBgColorPreview.style.opacity = bgColor[3] === 0 ? '0.3' : '1';
             }
         }
 
@@ -1374,9 +1383,11 @@ function rgbaToCssGradient(rgba) {
     return `linear-gradient(to bottom, rgba(${rgba[0]},${rgba[1]},${rgba[2]},${rgba[3]}) 50%, rgba(${rgba[0]},${rgba[1]},${rgba[2]},${rgba[3]}) 50%)`;
 }
 
-function hexToCssGradient(hex) {
+function hexToCssGradient(hex, alpha = 1) {
     // Convert hex color to CSS gradient string
+    // alpha parameter allows overriding the alpha value (0 = transparent, 1 = opaque)
     let rgba = hexToRgba(hex);
+    rgba[3] = alpha; // Override alpha value
     return rgbaToCssGradient(rgba);
 }
 
@@ -1397,6 +1408,7 @@ function saveBookmarkSettings() {
     let imageNodes = document.getElementsByClassName('fc-slide');
     let bgColor = null;
     let colorPickerColor = modalBgColorPickerInput.value;
+    let isTransparent = modalBgTransparent.checked;
 
     let customCarousel = document.getElementById('customCarousel');
     if (customCarousel) {
@@ -1404,8 +1416,12 @@ function saveBookmarkSettings() {
         bgColor = getBgColor(customCarousel.children[0]);
         if (colorPickerColor && colorPickerColor !== rgbToHex(bgColor)) {
             //console.log("colors dont match, using the picker!")
-            bgColor = hexToCssGradient(colorPickerColor);
+            bgColor = hexToCssGradient(colorPickerColor, isTransparent ? 0 : 1);
         } else {
+            // If transparent checkbox is checked, override alpha to 0
+            if (isTransparent) {
+                bgColor[3] = 0;
+            }
             bgColor = rgbaToCssGradient(bgColor);
         }
         targetNode.children[0].children[0].style.backgroundImage = `url('${selectedImageSrc}'), ${bgColor}`;
@@ -1442,8 +1458,12 @@ function saveBookmarkSettings() {
                 }
 
                 if (colorPickerColor && colorPickerColor !== rgbToHex(bgColor)) {
-                    bgColor = hexToCssGradient(colorPickerColor);
+                    bgColor = hexToCssGradient(colorPickerColor, isTransparent ? 0 : 1);
                 } else {
+                    // If transparent checkbox is checked, override alpha to 0
+                    if (isTransparent) {
+                        bgColor[3] = 0;
+                    }
                     bgColor = rgbaToCssGradient(bgColor);
                 }
 
@@ -2135,6 +2155,17 @@ modalImgInput.onchange = function () {
         })
     });
 };
+
+modalBgTransparent.addEventListener('change', function() {
+    // Update the color preview to show transparency effect
+    if (this.checked) {
+        // Show transparent effect by reducing opacity of preview
+        modalBgColorPreview.style.opacity = '0.3';
+    } else {
+        // Show full opacity
+        modalBgColorPreview.style.opacity = '1';
+    }
+});
 
 
 maxColsInput.oninput = function (e) {
