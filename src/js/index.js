@@ -1640,9 +1640,41 @@ function resizeBackground(dataURI) {
     })
 }
 
+// Helper function to detect if an image is a GIF
+function isGifImage(imageUrl) {
+    // Check for .gif extension in URL
+    if (imageUrl.toLowerCase().includes('.gif')) {
+        return true;
+    }
+    // Check for data URI with GIF mime type
+    if (imageUrl.startsWith('data:image/gif')) {
+        return true;
+    }
+    return false;
+}
+
 // todo: completely offload this shit to the worker
 function resizeThumb(dataURI) {
     return new Promise(function (resolve, reject) {
+        // Check if this is a GIF - preserve it as-is to maintain animation
+        if (isGifImage(dataURI)) {
+            // For GIFs, validate size but don't resize to preserve animation
+            let img = new Image();
+            img.onload = function() {
+                if (this.height >= 96 || this.width >= 96) {
+                    resolve(dataURI);
+                } else {
+                    reject(new Error('GIF too small (minimum 96px)'));
+                }
+            };
+            img.onerror = function() {
+                reject(new Error('Failed to load GIF'));
+            };
+            img.src = dataURI;
+            return;
+        }
+
+        // Original resize logic for non-GIF images
         let img = new Image();
         img.onload = async function () {
             if (this.height > 256 && this.width > 256) {

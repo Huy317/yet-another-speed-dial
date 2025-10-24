@@ -230,6 +230,19 @@ function getBgColor(image) {
     });
 }
 
+// Helper function to detect if an image is a GIF
+function isGifImage(imageUrl) {
+    // Check for .gif extension in URL
+    if (imageUrl.toLowerCase().includes('.gif')) {
+        return true;
+    }
+    // Check for data URI with GIF mime type
+    if (imageUrl.startsWith('data:image/gif')) {
+        return true;
+    }
+    return false;
+}
+
 function resizeImage(image, screenshot = false) {
     return new Promise((resolve, reject) => {
         if (!image || !image.length) {
@@ -240,6 +253,28 @@ function resizeImage(image, screenshot = false) {
         const targetHeight = 144;
         const targetRatio = targetWidth / targetHeight;
         const tolerance = 0.25;
+
+        // Check if this is a GIF - preserve it as-is to maintain animation
+        if (isGifImage(image) && !screenshot) {
+            // For GIFs, we keep the original to preserve animation
+            // Only check if it meets minimum size requirements
+            const img = new Image();
+            img.onload = function() {
+                const sWidth = this.naturalWidth || this.width;
+                const sHeight = this.naturalHeight || this.height;
+                
+                if (sHeight >= 96 || sWidth >= 96) {
+                    resolve(image);
+                } else {
+                    // discard images < 96px
+                    resolve();
+                }
+            };
+            img.onerror = () => resolve();
+            img.crossOrigin = "Anonymous";
+            img.src = image;
+            return;
+        }
 
         const img = new Image();
 
