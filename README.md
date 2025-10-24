@@ -10,3 +10,9 @@ Yet Another Speed Dial
 </h1>
 
 Fork for personal use and custom features
+- Add .gif support
+- Add a check box to turn background color to transparent
+
+## Issues
+- Can't drag to relocate icon
+- Capturing image doesn't work
