@@ -2,3 +2,5 @@
 .DS_Store
 *.md
 !README.md
+*.zip
+*.xpi

@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "__MSG_extensionName__",
-  "description": "__MSG_extensionDescription__",
+  "name": "YASD Dax's version",
+  "description": "Yet Another Speed Dial - Dax's version",
   "default_locale": "en",
-  "version": "3.7.2",
+  "version": "3.7.3",
   "author": "dev@conceptualspace.net",
   "icons": {
     "16": "icons/icon16.png",
@@ -42,7 +42,7 @@
   },
   "browser_specific_settings": {
     "gecko": {
-      "id": "yet_another_speed_dial@conceptualspace.net",
+      "id": "yet_another_speed_dial@local_extension",
       "strict_min_version": "109.0"
     }
   }
