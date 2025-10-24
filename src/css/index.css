@@ -275,6 +275,17 @@ h1 {
     background-position: 50%;
     background-repeat: no-repeat;
     background-size: var(--image-scaling);
+    position: relative;
+    overflow: hidden;
+}
+
+.tile-img {
+    width: 100%;
+    height: 100%;
+    object-fit: var(--image-scaling);
+    object-position: center;
+    display: block;
+    pointer-events: auto;
 }
 
 .tile-title {

@@ -28,7 +28,7 @@
     "newtab": "index.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "scripts": ["background.js"]
   },
   "action": {
     "default_icon": {

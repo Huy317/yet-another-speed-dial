@@ -166,6 +166,9 @@
   "tileTitle": {
     "message": "Title"
   },
+  "transparentBg": {
+    "message": "Transparent Background"
+  },
   "title": {
     "message": "Speed Dial"
   },
